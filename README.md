@@ -1,27 +1,76 @@
-# Ensar Yaman
+<h1 align="center">Ensar Yaman</h1>
+<p align="center"><samp>FULL-STACK DEVELOPER &nbsp; / &nbsp; WEB · MOBILE · APIs</samp></p>
+<p align="center"><strong>Thoughtful interfaces. Solid foundations.</strong><br />
+I build across the stack, connecting the experience you see with the systems behind it.</p>
 
-**Full-stack Developer · Web, Mobile & APIs**
+<p align="center">
+<img alt="TYPE SAFE" src="https://img.shields.io/badge/TYPE%20SAFE-2563eb?style=for-the-badge" />
+<img alt="PRODUCT MINDED" src="https://img.shields.io/badge/PRODUCT%20MINDED-0f766e?style=for-the-badge" />
+<img alt="STACK FLEXIBLE" src="https://img.shields.io/badge/STACK%20FLEXIBLE-334155?style=for-the-badge" />
+</p>
 
-I build applications across the stack, from web and mobile interfaces to backend services and data integrations. My work spans the JavaScript, TypeScript and PHP ecosystems.
+---
 
-I choose technologies around the product and its requirements, with a focus on maintainable code, clear architecture and a thoughtful user experience.
+### 01 &nbsp; / &nbsp; What I build
 
-### Development toolkit
+<table>
+<tr>
+<td width="33%" valign="top">
+<h3>↗ Web</h3>
+<p>Responsive interfaces and full-stack web applications.</p>
+<sub><b>REACT · NEXT.JS · TYPESCRIPT</b></sub>
+</td>
+<td width="33%" valign="top">
+<h3>⌁ Mobile</h3>
+<p>Connected experiences across mobile platforms.</p>
+<sub><b>REACT NATIVE · EXPO</b></sub>
+</td>
+<td width="33%" valign="top">
+<h3>⌘ Backend</h3>
+<p>Application services, APIs and data integrations.</p>
+<sub><b>NODE.JS · LARAVEL · FIREBASE</b></sub>
+</td>
+</tr>
+</table>
 
-| Area | Technologies |
-| :--- | :--- |
-| Web | TypeScript, JavaScript, React, Next.js, Tailwind CSS |
-| Mobile | React Native, Expo |
-| Backend & APIs | Node.js, Express, PHP, Laravel |
-| Data & services | Firebase, Cloud Firestore, MongoDB |
+### 02 &nbsp; / &nbsp; The toolkit
 
-### Engineering focus
+<p>
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-172554?style=for-the-badge" />
+<img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-172554?style=for-the-badge" />
+<img alt="React" src="https://img.shields.io/badge/React-172554?style=for-the-badge" />
+<img alt="Next.js" src="https://img.shields.io/badge/Next.js-172554?style=for-the-badge" />
+<img alt="React Native" src="https://img.shields.io/badge/React%20Native-172554?style=for-the-badge" />
+<img alt="Expo" src="https://img.shields.io/badge/Expo-172554?style=for-the-badge" />
+<br />
+<img alt="Node.js" src="https://img.shields.io/badge/Node.js-134e4a?style=for-the-badge" />
+<img alt="Express" src="https://img.shields.io/badge/Express-134e4a?style=for-the-badge" />
+<img alt="PHP" src="https://img.shields.io/badge/PHP-134e4a?style=for-the-badge" />
+<img alt="Laravel" src="https://img.shields.io/badge/Laravel-134e4a?style=for-the-badge" />
+<img alt="Firebase" src="https://img.shields.io/badge/Firebase-134e4a?style=for-the-badge" />
+<img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-134e4a?style=for-the-badge" />
+</p>
 
-- Building connected web and mobile experiences.
-- Designing APIs and integrating application services.
-- Improving performance, discoverability and usability.
-- Keeping applications maintainable through clear structure, validation and testing.
+### 03 &nbsp; / &nbsp; Behind the code
 
-### About my GitHub
+```typescript
+const ensar = {
+  focus: ["web", "mobile", "backend"],
+  mindset: "Product first. Choose the right tools.",
+  priorities: ["clarity", "maintainability", "user experience"],
+};
+```
 
-Much of my current work lives in private repositories. The public repositories here also include earlier projects and experiments.
+<details>
+<summary><b>A little more about my work</b></summary>
+<br />
+
+I work across the JavaScript, TypeScript and PHP ecosystems, from interfaces and APIs to service integrations. I care about clear architecture, performance, validation and testing.
+
+Much of my current development takes place in private repositories. My contribution activity offers a broader view of my ongoing work.
+
+</details>
+
+---
+
+<p align="center"><samp>GOOD SOFTWARE IS IN THE DETAILS.</samp></p>

@@ -1,0 +1,147 @@
+name: Refresh profile stats and animations
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * *'
+  push:
+    branches: [main]
+    paths: ['.github/workflows/profile.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile-assets
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate public activity cards
+        env:
+          PROFILE_USER: EnsarYm
+        run: |
+          python3 - <<'PY'
+          import datetime as dt
+          import html
+          import json
+          import os
+          import re
+          import urllib.request
+          from html.parser import HTMLParser
+          from pathlib import Path
+          
+          USER = os.environ.get('PROFILE_USER', 'EnsarYm')
+          assert re.fullmatch(r'[A-Za-z0-9-]+', USER)
+          
+          def fetch(url):
+              request = urllib.request.Request(url, headers={'User-Agent': USER + '-profile', 'Accept': 'text/html'})
+              with urllib.request.urlopen(request, timeout=40) as response:
+                  return response.read().decode()
+          
+          class Calendar(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.cells = {}
+                  self.labels = {}
+                  self.target = None
+              def handle_starttag(self, tag, attrs):
+                  a = dict(attrs)
+                  if tag == 'td' and 'data-date' in a:
+                      self.cells[a['id']] = {'date': a['data-date'], 'level': int(a['data-level'])}
+                  if tag == 'tool-tip' and a.get('for', '').startswith('contribution-day'):
+                      self.target = a['for']
+                      self.labels[self.target] = ''
+              def handle_data(self, data):
+                  if self.target:
+                      self.labels[self.target] += data
+              def handle_endtag(self, tag):
+                  if tag == 'tool-tip':
+                      self.target = None
+          
+          page = fetch('https://github.com/users/' + USER + '/contributions')
+          calendar = Calendar()
+          calendar.feed(page)
+          days = []
+          for key, day in calendar.cells.items():
+              label = calendar.labels.get(key, '').strip()
+              match = re.match(r'([\d,]+) contribution', label)
+              if not match and not label.startswith('No contributions'):
+                  raise RuntimeError('Unrecognized contribution label: ' + label)
+              day['count'] = int(match.group(1).replace(',', '')) if match else 0
+              days.append(day)
+          days.sort(key=lambda day: day['date'])
+          if len(days) < 350:
+              raise RuntimeError('Incomplete contribution calendar; keeping previous assets')
+          heading = re.search(r'id="js-contribution-activity-description"[^>]*>\s*([\d,]+)', page)
+          total = sum(day['count'] for day in days)
+          if not heading or total != int(heading.group(1).replace(',', '')):
+              raise RuntimeError('Contribution total mismatch; keeping previous assets')
+          active = sum(day['count'] > 0 for day in days)
+          longest = run = 0
+          for day in days:
+              run = run + 1 if day['count'] else 0
+              longest = max(longest, run)
+          recent = sum(day['count'] for day in days[-30:])
+          updated = dt.datetime.now(dt.timezone.utc).strftime('%d %b %Y')
+          period = days[0]['date'] + ' to ' + days[-1]['date']
+          out = Path('assets')
+          out.mkdir(exist_ok=True)
+          
+          def start(w, h, title, description):
+              return f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img"><title>{html.escape(title)}</title><desc>{html.escape(description)}</desc>'
+          
+          metrics = [(total, 'CONTRIBUTIONS', 'GitHub calendar'), (active, 'ACTIVE DAYS', 'In the last year'), (longest, 'LONGEST STREAK', 'Days in this calendar'), (recent, 'LAST 30 DAYS', 'Contributions')]
+          svg = start(900, 245, 'GitHub activity for ' + USER, f'{total} contributions, {active} active days, longest streak {longest} days and {recent} contributions in the last 30 days. Period: {period}.')
+          svg += '<style>text{font-family:Arial,Helvetica,sans-serif}.mono{font-family:Consolas,monospace}.point{animation:pulse 2.8s ease-in-out infinite}@keyframes pulse{50%{opacity:.35}}@media(prefers-reduced-motion:reduce){.point{animation:none}}</style>'
+          svg += '<rect x="1" y="1" width="898" height="243" rx="14" fill="#0d1117" stroke="#30363d"/>'
+          svg += '<circle class="point" cx="27" cy="29" r="4" fill="#2dd4bf"/><text x="42" y="34" fill="#e6edf3" font-size="16" font-weight="700">GITHUB / BY THE NUMBERS</text>'
+          svg += f'<text x="874" y="33" fill="#8b949e" font-size="11" text-anchor="end">Updated {updated} UTC</text>'
+          for i, (value, label, subtitle) in enumerate(metrics):
+              x = 28 + i * 222
+              if i:
+                  svg += f'<path d="M{x-17} 60V150" stroke="#21262d"/>'
+              svg += f'<text class="mono" x="{x}" y="79" fill="#8b949e" font-size="11" letter-spacing="1">{label}</text><text x="{x}" y="121" fill="{["#60a5fa", "#2dd4bf", "#a78bfa", "#60a5fa"][i]}" font-size="37" font-weight="700">{value:,}</text><text x="{x}" y="145" fill="#8b949e" font-size="11">{subtitle}</text>'
+          svg += '<path d="M26 165H874" stroke="#21262d"/><text class="mono" x="28" y="190" fill="#8b949e" font-size="10">LAST 30 DAYS</text>'
+          peak = max(1, max(day['count'] for day in days[-30:]))
+          for i, day in enumerate(days[-30:]):
+              height = max(2, day['count'] / peak * 40)
+              svg += f'<rect x="{166+i*23}" y="{219-height:.2f}" width="16" height="{height:.2f}" rx="3" fill="{"#2dd4bf" if day["count"] else "#21262d"}"><title>{day["date"]}: {day["count"]}</title></rect>'
+          svg += '</svg>'
+          (out/'github-stats.svg').write_text(svg, encoding='utf-8')
+          
+          svg = start(900, 225, 'Animated contribution calendar', 'Real GitHub contribution levels. The moving highlight is decorative; cell colors represent actual contribution activity. ' + period)
+          svg += '<style>text{font-family:Arial,Helvetica,sans-serif}.scan{animation:scan 12s linear infinite}.signal{animation:signal 4s ease-in-out infinite}@keyframes scan{0%{transform:translateX(0);opacity:0}4%,96%{opacity:.5}100%{transform:translateX(834px);opacity:0}}@keyframes signal{50%{opacity:.4}}@media(prefers-reduced-motion:reduce){.scan,.signal{animation:none}.scan{display:none}}</style>'
+          svg += '<rect x="1" y="1" width="898" height="223" rx="14" fill="#0d1117" stroke="#30363d"/><circle class="signal" cx="27" cy="28" r="4" fill="#60a5fa"/><text x="42" y="33" fill="#e6edf3" font-size="16" font-weight="700">CONTRIBUTION / PULSE</text><text x="874" y="33" fill="#8b949e" font-size="11" text-anchor="end">Real activity. One day at a time.</text>'
+          first = dt.date.fromisoformat(days[0]['date'])
+          palette = ['#161b22', '#0e3d52', '#126c7e', '#1aa5a5', '#2dd4bf']
+          for day in days:
+              index = (dt.date.fromisoformat(day['date']) - first).days
+              x = 28 + (index // 7) * 16
+              y = 56 + (index % 7) * 17
+              svg += f'<rect x="{x}" y="{y}" width="12" height="12" rx="3" fill="{palette[day["level"]]}"><title>{day["date"]}: {day["count"]} contributions</title></rect>'
+          svg += '<rect class="scan" x="25" y="52" width="5" height="118" rx="2" fill="#93c5fd"/>'
+          svg += f'<text x="28" y="201" fill="#8b949e" font-size="11">{period}</text><text x="696" y="201" fill="#8b949e" font-size="10">LESS</text>'
+          for i, color in enumerate(palette):
+              svg += f'<rect x="{729+i*20}" y="190" width="13" height="13" rx="3" fill="{color}"/>'
+          svg += '<text x="841" y="201" fill="#8b949e" font-size="10">MORE</text></svg>'
+          (out/'activity.svg').write_text(svg, encoding='utf-8')
+          
+          svg = start(800, 52, 'Full-stack developer — Web, mobile and APIs', 'Animated typing text: Building across the stack. Web. Mobile. APIs. Product first. Details matter.')
+          svg += '<style>text{font:20px Consolas,monospace;fill:#60a5fa}.line{opacity:0}.a{animation:a 15s infinite}.b{animation:b 15s infinite}.c{animation:c 15s infinite}.reveal{animation:reveal 5s steps(32,end) infinite}.cursor{animation:blink .7s steps(1) infinite}@keyframes reveal{0%,100%{width:0}55%,85%{width:800px}}@keyframes a{0%,32.9%{opacity:1}33%,100%{opacity:0}}@keyframes b{0%,32.9%{opacity:0}33%,65.9%{opacity:1}66%,100%{opacity:0}}@keyframes c{0%,65.9%{opacity:0}66%,99.9%{opacity:1}100%{opacity:0}}@keyframes blink{50%{opacity:0}}@media(prefers-reduced-motion:reduce){.line,.reveal,.cursor{animation:none}.a{opacity:1}.reveal{width:800px}.cursor{display:none}}</style><defs><clipPath id="typing"><rect class="reveal" width="800" height="52"/></clipPath></defs><g clip-path="url(#typing)" text-anchor="middle"><text class="line a" x="400" y="34">Building across the stack.</text><text class="line b" x="400" y="34">Web. Mobile. APIs.</text><text class="line c" x="400" y="34">Product first. Details matter.</text></g></svg>'
+          (out/'typing.svg').write_text(svg, encoding='utf-8')
+          (out/'activity.json').write_text(json.dumps({'user': USER, 'period': period, 'contributions': total, 'active_days': active, 'longest_streak_in_period': longest, 'last_30_days': recent, 'updated_utc': updated}, indent=2)+'\n', encoding='utf-8')
+          print(json.dumps({'contributions': total, 'active_days': active, 'longest_streak': longest, 'last_30_days': recent}))
+          PY
+      - name: Commit refreshed assets
+        run: |
+          git add assets/
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: refresh GitHub activity cards"
+          git push
